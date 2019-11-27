@@ -1,0 +1,208 @@
+\section{Тест производительности}
+
+Напишем простую программу для генерации тестов и замера времени выполнения данных тестов. Она генерирует заданное количество пар из строк случайной длины от 1 до 256, содержащих случайные символы латинского алфавита, и чисел типа unsigned long long.
+
+\begin{lstlisting} [language=C]
+#include <ctime>
+#include <random>
+#include <map>
+#include <limits>
+#include <tuple>
+#include <string>
+#include <cstdlib>
+#include <iostream>
+#include <chrono>
+#include <iomanip>
+
+#include "TPatricia.h"
+#include "profile.h"
+
+using namespace std;
+
+default_random_engine rng;
+
+uint64_t get_number(uint64_t min = 0,uint64_t max = numeric_limits<unsigned long long>::max()) {
+    uniform_int_distribution<unsigned long long> dist_ab(min, max);
+    return dist_ab(rng);
+}
+
+string get_string() {
+    size_t string_size = get_number(1,256);
+    string string;
+    string.resize(string_size);
+    for (size_t i = 0; i < string_size; ++i) {
+        string[i] = 'a' + get_number(0,25);
+    }
+    return string;
+}
+
+TVector<unsigned char> convert_string(const string& s) {
+    TVector<unsigned char> vector(s.size());
+    for (size_t i = 0; i < s.size(); ++i) {
+        vector[i] = s[i];
+    }
+    return vector;
+}
+
+string convert_string(TVector<unsigned char>& vec) {
+    string str;
+    str.resize(vec.Size());
+    for (size_t i = 0; i < str.size(); ++i) {
+        str[i] = vec[i];
+    }
+    return str;
+}
+
+int main() {
+    rng.seed(std::chrono::system_clock::now().time_since_epoch().count());
+    size_t count;
+    cin >> count;
+    vector<pair<TVector<unsigned char>, unsigned long long>> test_data(count);
+    fstream test_data_log("file.test", ios::out);
+    {
+    LOG_DURATION("Generate")
+        for (size_t i = 0; i < count; ++i) {
+            test_data[i].first = convert_string(get_string());
+            test_data[i].second = get_number(0, numeric_limits<unsigned long long>::max());
+            test_data_log << test_data[i].first << " " << test_data[i].second << "\n";
+        }
+    }
+
+    cout << "Patricia test\n";
+    TPatricia<unsigned long long> patricia;
+    {
+        LOG_DURATION("Insert time")
+        for (size_t i = 0; i < count; ++i) {
+            patricia.Insert(test_data[i].first, test_data[i].second);
+        }
+    }
+
+    {
+         LOG_DURATION("Save to file")
+         patricia.PrintToFile("file");
+    }
+
+    std::shuffle(test_data.begin(), test_data.end(), rng);
+    {
+        LOG_DURATION("Write and erase one element")
+        for (size_t i = 0; i < count; ++i) {
+            patricia.Erase(test_data[i].first);
+            patricia.Insert(test_data[i].first, test_data[i].second);
+        }
+    }
+    {
+        LOG_DURATION("Erase time")
+        for (size_t i = 0; i < count; ++i) {
+            patricia.Erase(test_data[i].first);
+        }
+    }
+    {
+        LOG_DURATION("Erase empty time")
+        for (size_t i = 0; i < count; ++i) {
+            patricia.Erase(test_data[i].first);
+        }
+    }
+
+    {
+        LOG_DURATION("Scan from file")
+        patricia.ScanFromFile("file");
+    }
+
+
+    vector<pair<string, unsigned long long>> map_test(test_data.size());
+    for (size_t i = 0; i < map_test.size(); ++i) {
+        map_test[i] = {convert_string(test_data[i].first), test_data[i].second};
+    }
+    cout << "std::map test\n";
+    map<string, unsigned long long> map;
+    {
+        LOG_DURATION("Insert time")
+        for (size_t i = 0; i < count; ++i) {
+            map[map_test[i].first] = map_test[i].second;
+        }
+    }
+
+    std::shuffle(test_data.begin(), test_data.end(), rng);
+
+    {
+        LOG_DURATION("Write and erase one element")
+        for (size_t i = 0; i < count; ++i) {
+            map.erase(map_test[i].first);
+            map[map_test[i].first] = map_test[i].second;
+        }
+    }
+    {
+        LOG_DURATION("Erase time")
+        for (size_t i = 0; i < count; ++i) {
+            map.erase(map_test[i].first);
+        }
+    }
+    {
+        LOG_DURATION("Erase empty time")
+        for (size_t i = 0; i < count; ++i) {
+            patricia.Erase(test_data[i].first);
+        }
+    }
+
+    return 0;
+}
+
+\end{lstlisting}
+
+
+\subsection{Протокол тестирования производительности}
+\begin{alltt}
+
+ilya@ilya-lenovo:~/CLionProjects/da_02/cmake-build-debug$ ./test
+10000
+Generate: 183 ms
+Patricia test
+Insert time: 16 ms
+Save to file: 9 ms
+Write and erase one element: 46 ms
+Erase time: 25 ms
+Erase empty time: 0 ms
+Scan from file: 37 ms
+std::map test
+Insert time: 24 ms
+Write and erase one element: 50 ms
+Erase time: 24 ms
+Erase empty time: 24 ms
+ilya@ilya-lenovo:~/CLionProjects/da_02/cmake-build-debug$ ./test
+100000
+Generate: 1533 ms
+Patricia test
+Insert time: 235 ms
+Save to file: 189 ms
+Write and erase one element: 523 ms
+Erase time: 308 ms
+Erase empty time: 0 ms
+Scan from file: 377 ms
+std::map test
+Insert time: 307 ms
+Write and erase one element: 602 ms
+Erase time: 310 ms
+Erase empty time: 278 ms
+ilya@ilya-lenovo:~/CLionProjects/da_02/cmake-build-debug$ ./test
+1000000
+Generate: 15157 ms
+Patricia test
+Insert time: 3345 ms
+Save to file: 16384 ms
+Write and erase one element: 6522 ms
+Erase time: 3895 ms
+Erase empty time: 9 ms
+Scan from file: 3870 ms
+std::map test
+Insert time: 3941 ms
+Write and erase one element: 7646 ms
+Erase time: 4156 ms
+Erase empty time: 3514 ms
+
+
+\end{alltt}
+
+Продемонстрировано преимущество в скорости PATRICIA по сравнению с std::map. Это неудивительно, ведь PATRICIA не сравнивает ключи целиком при поиске.
+
+\pagebreak
+
