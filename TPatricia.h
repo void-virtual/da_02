@@ -10,7 +10,36 @@
 #define MAX_LEFT_ONE 128 // 10000000
 #define BITS_IN_CHAR 8
 
+void printChar(unsigned char a);
+
 bool getNthBit(const TVector<unsigned char>& lhs, size_t index);
+
+template <typename T>
+std::ostream& operator << (std::ostream& os, const TVector<T>& vec) {
+    for (size_t i = 0; i < vec.Size(); ++i) {
+        os << vec[i];
+    }
+    return os;
+}
+
+template <typename T>
+bool operator == (const TVector<T>& lhs, const TVector<T>& rhs) {
+    if (lhs.Size() != rhs.Size()) {
+        return false;
+    }
+    for (size_t i = 0; i < lhs.Size(); ++i) {
+        if (lhs[i] != rhs[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+template <typename T>
+bool operator != (const TVector<T>& lhs, const TVector<T>& rhs) {
+    return !(lhs == rhs);
+}
+
 
 template <typename T>
 class TPatricia {
@@ -20,6 +49,8 @@ public:
     ~TPatricia() {
         DeleteTree(header);
     }
+
+
 
     TOptional<T> operator [] (const TVector<unsigned char>& string) const {
         Node* endNode = SearchKey(string);
@@ -268,6 +299,14 @@ public:
         file.close();
     }
 
+
+
+    void Print(std::ostream& os) const {
+        Print(header, os, 0);
+    }
+
+
+
 private:
     struct Node {
         long long index_to_check;
@@ -347,5 +386,25 @@ private:
         return cur_node;
     }
 
+
+
+    void Print(Node* node, std::ostream& os, int depth) const {
+        if(node == nullptr){
+            return;
+        }
+        for (int i = 0; i < depth * 4; ++i) {
+            os << " ";
+        }
+        os << "key: " << node->string << ", value: " << node->data << ", index: " << node->index_to_check;
+        os << "\n";
+        if (node->left != nullptr && node->index_to_check < node->left->index_to_check) {
+            Print(node->left, os, depth + 1);
+        }
+        if (node->right != nullptr && node->index_to_check < node->right->index_to_check) {
+            Print(node->right, os, depth + 1);
+        }
+    }
+
     Node* header = nullptr;
-/bin/bash: q: команда не найдена
+
+};

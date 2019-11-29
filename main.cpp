@@ -46,6 +46,8 @@ int main() {
                 std::cin >> command;
                 patr.ScanFromFile(command);
                 std::cout << "OK" << "\n";
+            } else if (strcmp(command, "Print") == 0) {
+                patr.Print(std::cout);
             }
         } else {
             TVector<unsigned char> str = strToVec(command);

@@ -9,3 +9,5 @@ add_executable(da_02 main.cpp TPatricia.cpp TPatricia.h TVector.h TOptional.h)
 add_executable(test test_generator.cpp TPatricia.cpp profile.h)
 
 add_executable(copy_test copy_test.cpp)
+
+add_executable(text_test text_test_generator.cpp)

@@ -119,29 +119,3 @@ private:
     size_t size = 0;
     size_t capacity = 0;
 };
-
-template <typename T>
-std::ostream& operator << (std::ostream& os, const TVector<T>& vec) {
-    for (size_t i = 0; i < vec.Size(); ++i) {
-        os << vec[i];
-    }
-    return os;
-}
-
-template <typename T>
-bool operator == (const TVector<T>& lhs, const TVector<T>& rhs) {
-    if (lhs.Size() != rhs.Size()) {
-        return false;
-    }
-    for (size_t i = 0; i < lhs.Size(); ++i) {
-        if (lhs[i] != rhs[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-
-template <typename T>
-bool operator != (const TVector<T>& lhs, const TVector<T>& rhs) {
-    return !(lhs == rhs);
-}
